@@ -1,5 +1,5 @@
 <div align="center">
-<h2 align="center"> CLiFT: Compressive Light-Field Tokens for Compute Efficient and Adaptive Neural Rendering
+<h2 align="center"> CLiFT: Compressive Light-Field Tokens for Compute-Efficient and Adaptive Neural Rendering
 </h2>
 
 <!-- <h4 align="center"> ICLR 2025 </h4> -->
@@ -11,10 +11,8 @@
 ([arXiv](https://arxiv.org/abs/xxx), [Project page](https://clift-nvs.github.io/))
 </div>
 
-<div align="center">
-    <video src="assets/demo.mp4" width="100%"></video>
-</div>
 
+Code will be released around August 1st.
 
 
 https://github.com/user-attachments/assets/655a5716-74a8-473c-942e-40e1ea8abee1
