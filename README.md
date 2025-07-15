@@ -8,7 +8,7 @@
 
 <sup>1</sup> Simon Fraser University <sup>2</sup> Wayve
 
-([arXiv](https://arxiv.org/abs/xxx), [Project page](https://clift-nvs.github.io/))
+([arXiv](https://arxiv.org/abs/2507.08776), [Project page](https://clift-nvs.github.io/))
 </div>
 
 
