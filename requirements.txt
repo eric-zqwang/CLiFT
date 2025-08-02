@@ -1,0 +1,16 @@
+dacite
+einops
+hydra-core
+imageio
+imageio-ffmpeg
+jaxtyping
+lightning
+lpips
+moviepy
+scikit-video
+tqdm
+wandb
+scikit-image
+scikit-learn
+numpy==1.26.3
+scipy==1.11.4
