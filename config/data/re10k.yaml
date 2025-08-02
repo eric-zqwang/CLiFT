@@ -1,0 +1,11 @@
+name: re10k
+data_dir: ../re10k_data/re10k_decomposed/
+image_size: [256, 256]
+batch_size: 4
+val_batch_size: 4
+num_target_views: 4
+num_workers: 8
+overfit: -1
+normalize_camera: true
+
+kmeans_dir: ../re10k_data/kmeans_faiss_no_features_merged

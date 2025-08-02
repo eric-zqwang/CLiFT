@@ -1,0 +1,20 @@
+python finetune.py \
+    experiment_name=re10k_second_stage \
+    data=re10k \
+    base_model._target_=src.lightning_clift.LightningCLiFTWrapper \
+    model=encoder_decoder \
+    model.model_name._target_=src.model.squeezer_decoder.CLiFTnvs \
+    view_sampler=bounded_v2 \
+    view_sampler.cfg.num_context_views=4 \
+    data.val_batch_size=1 \
+    data.batch_size=20 \
+    trainer.precision=16-mixed \
+    model.optimizer.lr=4e-4 \
+    model.lr_scheduler.warmup_iters=2500 \
+    model.ckpt_path=output/re10k_first_stage/training/last.ckpt \
+    trainer.max_epochs=40 \
+    trainer.check_val_every_n_epoch=5 \
+    +trainer.gradient_clip_val=1.0 \
+    +trainer.gradient_clip_algorithm=norm \
+    +trainer.devices=4 \
+    +trainer.strategy=ddp_find_unused_parameters_true

@@ -1,0 +1,23 @@
+defaults:
+  - _self_
+
+_target_: src.dataset.view_sampler.view_sampler_bounded_v2.ViewSamplerBoundedV2
+
+cfg:
+  name: boundedv2
+  num_target_views: 6
+  num_context_views: 4
+
+  min_distance_between_context_views: 45
+  max_distance_between_context_views: 135
+  max_distance_to_context_views: 0
+
+  context_gap_warm_up_steps: 30000
+  target_gap_warm_up_steps: 0
+
+  initial_min_distance_between_context_views: 25
+  initial_max_distance_between_context_views: 45
+  initial_max_distance_to_context_views: 0
+
+  extra_views_sampling_strategy: random
+  target_views_replace_sample: true

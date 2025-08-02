@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+_target_: src.dataset.view_sampler.view_sampler_evaluation.ViewSamplerEvaluation
+
+
+cfg:
+  name: evaluation
+  index_path: assets/evaluation_index_re10k.json
+  num_context_views: 2
