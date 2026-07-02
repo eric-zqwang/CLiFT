@@ -114,6 +114,82 @@ def ray_condition(K, c2w, H, W, device, flip_flag=None):
     return plucker
 
 
+def get_downsample_camera_ray(
+    K, c2w, H, W, device, downsample_factor=8, flip_flag=None, extended_range=None
+):
+    """Compute (origin, direction) camera rays on a downsampled image grid.
+
+    Unlike ``ray_condition`` (which returns Plücker coordinates for rendering),
+    this returns raw camera rays ``[origin(3), direction(3)]`` per pixel, used by
+    the render-time token-selection heuristic (Algorithm 1) to measure ray-angle
+    and camera-center distances between context tokens and a target view.
+
+    Args:
+        K: [B, V, 4] pixel-space intrinsics (fx, fy, cx, cy).
+        c2w: [B, V, 4, 4] OpenCV camera-to-world matrices.
+        H, W: full-resolution image height / width.
+        downsample_factor: grid stride; the ray grid is (H / factor, W / factor).
+        extended_range: optional (extended_H, extended_W). When set, the sampling
+            grid is expanded symmetrically around the image (patch expansion), so
+            the target view covers a slightly larger frustum than the visible one.
+
+    Returns:
+        camera_ray: [B, V, H', W', 6] tensor of stacked (origin, direction).
+    """
+    B, V = K.shape[:2]
+
+    H = H // downsample_factor
+    W = W // downsample_factor
+    K = K / downsample_factor
+
+    if extended_range is not None:
+        extended_H, extended_W = extended_range
+        offset_H = (extended_H - H) / 2
+        offset_W = (extended_W - W) / 2
+
+        j, i = custom_meshgrid(
+            torch.linspace(-offset_H, H - 1 + offset_H, extended_H, device=device, dtype=c2w.dtype),
+            torch.linspace(-offset_W, W - 1 + offset_W, extended_W, device=device, dtype=c2w.dtype),
+        )
+        H, W = extended_H, extended_W
+    else:
+        j, i = custom_meshgrid(
+            torch.linspace(0, H - 1, H, device=device, dtype=c2w.dtype),
+            torch.linspace(0, W - 1, W, device=device, dtype=c2w.dtype),
+        )
+
+    i = i.reshape([1, 1, H * W]).expand([B, V, H * W]) + 0.5
+    j = j.reshape([1, 1, H * W]).expand([B, V, H * W]) + 0.5
+
+    n_flip = torch.sum(flip_flag).item() if flip_flag is not None else 0
+    if n_flip > 0:
+        j_flip, i_flip = custom_meshgrid(
+            torch.linspace(0, H - 1, H, device=device, dtype=c2w.dtype),
+            torch.linspace(W - 1, 0, W, device=device, dtype=c2w.dtype),
+        )
+        i_flip = i_flip.reshape([1, 1, H * W]).expand(B, 1, H * W) + 0.5
+        j_flip = j_flip.reshape([1, 1, H * W]).expand(B, 1, H * W) + 0.5
+        i[:, flip_flag, ...] = i_flip
+        j[:, flip_flag, ...] = j_flip
+
+    fx, fy, cx, cy = K.chunk(4, dim=-1)
+
+    zs = torch.ones_like(i)
+    xs = (i - cx) / fx * zs
+    ys = (j - cy) / fy * zs
+    zs = zs.expand_as(ys)
+
+    directions = torch.stack((xs, ys, zs), dim=-1)
+    directions = directions / directions.norm(dim=-1, keepdim=True)
+
+    rays_d = directions @ c2w[..., :3, :3].transpose(-1, -2)
+    rays_o = c2w[..., :3, 3]
+    rays_o = rays_o[:, :, None].expand_as(rays_d)
+    camera_ray = torch.cat([rays_o, rays_d], dim=-1)
+    camera_ray = camera_ray.reshape(B, c2w.shape[1], H, W, 6)
+    return camera_ray
+
+
 import torch
 from einops import einsum
 from jaxtyping import Float

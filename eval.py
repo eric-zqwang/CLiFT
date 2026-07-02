@@ -1,7 +1,6 @@
 import os
 import hydra
 import lightning.pytorch as pl
-from src.dataset.dl3dv import build_dl3dv_test_dataloader, build_dl3dv_dataloader
 from src.dataset.re10k import build_re10k_test_dataloader
 from src.utils.step_tracker import StepTracker
 import torch
@@ -21,6 +20,7 @@ def main(cfg):
     if cfg.data.name == 're10k':
         test_loader = build_re10k_test_dataloader(cfg)
     elif cfg.data.name == 'dl3dv':
+        from src.dataset.dl3dv import build_dl3dv_test_dataloader
         test_loader = build_dl3dv_test_dataloader(cfg)
     else:
         raise ValueError(f"Invalid data: {cfg.data.name}")    

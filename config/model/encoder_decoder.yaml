@@ -35,6 +35,24 @@ squeezer:
   num_layers: 2
   decoder_lr_scale: 0.1
 
+# Render-time token selection. NOTE: these values reproduce the actual Table 1
+# runs (uncommitted script/eval_re10k_longseq_number*.sh), which differ from the
+# paper's Algorithm 1 pseudocode: patch_topk / momentum / previous_select are 0.
+# Only used by src.model.clift_token_selection.CLiFTnvsTokenSelection /
+# src.lightning_clift_token_selection.LightningCLiFTTokenSelection.
+render_selection:
+  num_render_tokens: 4096      # Nr: compute budget of tokens rendered per view
+  storage_token_ratio: 0.5     # Ns = seq_len * ratio (8 views -> 8192 * 0.5 = 4096)
+  angular_weight: 1.0          # weight on ray-angle distance
+  cam_center_weight: 0.02      # weight on camera-center distance
+  patch_topk: 0                # per-patch coverage budget; Table 1 code uses 0 (pure global fallback)
+  momentum_weight: 0.0         # EMA weight on previous frame's distance field; Table 1 uses 0
+  previous_select_weight: 0.0  # bonus for previously selected tokens; Table 1 uses 0
+  target_range: 24             # expanded target sampling grid (patch expansion)
+  context_downsample: 8        # context ray grid stride (== patch_size)
+  target_downsample: 16        # target ray grid stride before expansion
+  kmeans_pca_dim: 16           # PCA dim for latent K-means storage selection (Table 1 uses 16)
+
 ckpt_path: null
 
 trainable_modules: null
