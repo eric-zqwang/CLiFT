@@ -85,7 +85,9 @@ class LiFTnvs(nn.Module):
             x = self.linear_target(x)
         return x
 
-    def encode_scene(self, input_image, input_view_plucker_coords):
+    def encode_scene(self, input_image, input_view_plucker_coords, num_context_views=None):
+        # num_context_views exists for interface uniformity with the DL3DV
+        # model; RE10K batches have a fixed number of views and pass None.
         num_condition_view = input_image.shape[1]
 
         input_tokens = self.patchify(input_view_plucker_coords, input_image)

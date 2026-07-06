@@ -8,29 +8,49 @@ class LightningCLiFTWrapper(LightningLiFTWrapper):
 
     def forward(self, data_dict):
         if data_dict.get('features') is None:
-            features = self.transformer.encode_scene(
-                data_dict['condition_views'],
-                data_dict['condition_views_plucker_coords']
-            )
-            data_dict['features'] = features
+            data_dict['features'] = self._encode_scene(data_dict)
 
         output_dict = self.transformer(
             data_dict['features'],
             data_dict['anchor_idx'],
             data_dict['labels'],
             data_dict['num_tokens'],
-            data_dict['sampled_views_plucker_coords']
+            data_dict['sampled_views_plucker_coords'],
+            self._num_context_views(data_dict),
         )
 
         return output_dict
 
+    def _num_context_views(self, data_dict):
+        """DL3DV batches mix 4-6 context views and carry the real count so
+        padded views can be masked; RE10K has a fixed number (None)."""
+        if self.cfg.data.name == 'dl3dv':
+            return data_dict['num_context_views']
+        return None
+
+    def _encode_scene(self, data_dict):
+        return self.transformer.encode_scene(
+            data_dict['condition_views'],
+            data_dict['condition_views_plucker_coords'],
+            self._num_context_views(data_dict),
+        )
+
+    def _encode_and_condense(self, data_dict, token_ratio=None):
+        """Encode the scene and run K-means condensation. When token_ratio is
+        None (validation), the model's default ratio applies."""
+        kwargs = {'num_context_views': self._num_context_views(data_dict)}
+        if token_ratio is not None:
+            kwargs['token_ratio'] = token_ratio
+        return self.transformer.encode_and_kmeans(
+            data_dict['condition_views'],
+            data_dict['condition_views_plucker_coords'],
+            **kwargs,
+        )
+
     def validation_step(self, data_dict, idx):
         self._get_plucker_coords(data_dict)
 
-        features, anchor_idx, labels, num_tokens = self.transformer.encode_and_kmeans(
-            data_dict['condition_views'],
-            data_dict['condition_views_plucker_coords']
-        )
+        features, anchor_idx, labels, num_tokens = self._encode_and_condense(data_dict)
         data_dict['features'] = features
         data_dict['anchor_idx'] = anchor_idx
         data_dict['labels'] = labels
@@ -68,10 +88,8 @@ class LightningCLiFTWrapper(LightningLiFTWrapper):
     def test_step(self, data_dict, idx):
         self._get_plucker_coords(data_dict)
 
-        features, anchor_idx, labels, num_tokens = self.transformer.encode_and_kmeans(
-            data_dict['condition_views'],
-            data_dict['condition_views_plucker_coords'],
-            self.cfg.model.token_ratio
+        features, anchor_idx, labels, num_tokens = self._encode_and_condense(
+            data_dict, self.cfg.model.token_ratio
         )
         data_dict['features'] = features
         data_dict['anchor_idx'] = anchor_idx
@@ -85,8 +103,18 @@ class LightningCLiFTWrapper(LightningLiFTWrapper):
         for metric_name, metric in metric_dict.items():
             self.log(f'test_metric/{metric_name}', metric, on_step=False, on_epoch=True, sync_dist=True)
 
-        self._save_test_samples(data_dict, output_dict, psnr_raw)
+        if self.cfg.save_images or self.cfg.save_videos:
+            self._save_test_samples(data_dict, output_dict, psnr_raw)
 
+
+    def setup(self, stage=None):
+        super().setup(stage)
+        # Freeze BEFORE the strategy wraps the model in DDP (which happens
+        # after this hook but before configure_optimizers): DDP then ignores
+        # the frozen encoder instead of waiting for its gradients, so plain
+        # `ddp` works without find_unused_parameters.
+        if stage == 'fit':
+            self.freeze_encoder()
 
     def freeze_encoder(self):
         # 1) Freeze encoder
@@ -106,9 +134,6 @@ class LightningCLiFTWrapper(LightningLiFTWrapper):
 
 
     def configure_optimizers(self):
-
-        self.freeze_encoder()
-
         lr = self.cfg.model.optimizer.lr
         special_lr = lr * self.cfg.model.squeezer.decoder_lr_scale
 

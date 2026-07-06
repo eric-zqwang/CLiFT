@@ -2,7 +2,8 @@ import os
 import hydra
 import lightning.pytorch as pl
 from lightning.pytorch.callbacks import LearningRateMonitor
-# from src.dataset.dl3dv import build_dl3dv_dataloader
+from src.dataset.dl3dv import build_dl3dv_dataloader, build_dl3dv_val_dataloader
+from src.dataset.dl3dv_load_kmeans import build_dl3dv_kmeans_dataloader
 from src.dataset.re10k import build_re10k_val_dataloader
 from src.dataset.re10k_load_kmeans import build_re10k_dataloader
 from src.utils.step_tracker import StepTracker
@@ -28,12 +29,16 @@ def main(cfg):
     # initialize data
 
     if cfg.data.name == 're10k':
-        train_loader, val_loader = build_re10k_dataloader(cfg, step_tracker=step_tracker)
-        step_tracker = StepTracker()
         train_loader, _ = build_re10k_dataloader(cfg, step_tracker=step_tracker)
-        val_loader = build_re10k_val_dataloader(cfg, step_tracker=step_tracker)  
-    # elif cfg.data.name == 'dl3dv':
-    #     train_loader, val_loader = build_dl3dv_dataloader(cfg, step_tracker=step_tracker)
+        val_loader = build_re10k_val_dataloader(cfg, step_tracker=step_tracker)
+    elif cfg.data.name == 'dl3dv':
+        if cfg.data.kmeans_dir is not None:
+            # Second stage: condenser training on precomputed K-means assignments.
+            train_loader = build_dl3dv_kmeans_dataloader(cfg, step_tracker=step_tracker)
+            val_loader = build_dl3dv_val_dataloader(cfg, step_tracker=step_tracker)
+        else:
+            # First stage: fine-tune the encoder-decoder from the RE10K model.
+            train_loader, val_loader = build_dl3dv_dataloader(cfg, step_tracker=step_tracker)
     else:
         raise ValueError(f"Invalid data: {cfg.data.name}")
     

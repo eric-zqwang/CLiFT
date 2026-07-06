@@ -32,7 +32,7 @@ lr_scheduler:
   initial_lr: 1e-8
 
 squeezer:
-  num_layers: 2
+  num_layers: 1
   decoder_lr_scale: 0.1
 
 # Render-time token selection. NOTE: these values reproduce the actual Table 1

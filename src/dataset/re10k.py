@@ -15,7 +15,7 @@ from src.utils.shims import apply_crop_shim
 import torchvision.transforms as tf
 
 class Re10kDataset(Dataset):
-    def __init__(self, cfg, split='train', view_sampler=None):
+    def __init__(self, cfg, split='train', view_sampler=None, return_view_indices=False):
         self.cfg = cfg
         self.data_dir = cfg.data.data_dir
         self.split = split
@@ -23,6 +23,9 @@ class Re10kDataset(Dataset):
         self.image_size = cfg.data.image_size
         self.view_sampler = view_sampler
         self.to_tensor = tf.ToTensor()
+        # Used by the K-means annotation pass (save_kmeans.py), which stores the
+        # sampled context indices alongside the clusters.
+        self.return_view_indices = return_view_indices
 
 
         self.data_dir = os.path.join(self.data_dir, self.split)
@@ -267,7 +270,23 @@ class Re10kDataset(Dataset):
             'sampled_views_extrinsics': example['target']['extrinsics'],
             'sampled_views_intrinsics': target_views_intrinsics
         })
+        if self.return_view_indices:
+            data_dict['condition_view_idx'] = example['context']['index']
         return data_dict
+
+
+def build_re10k_annotation_dataloader(cfg, step_tracker):
+    """One training-style pass over the train split for K-means annotation
+    (``save_kmeans.py``): context views plus their frame indices."""
+    view_sampler = hydra.utils.instantiate(cfg.view_sampler, stage="train", step_tracker=step_tracker)
+    dataset = Re10kDataset(cfg, split='train', view_sampler=view_sampler, return_view_indices=True)
+    return DataLoader(
+        dataset,
+        batch_size=1,
+        shuffle=False,
+        num_workers=cfg.data.num_workers,
+        pin_memory=False,
+    )
 
 
 def build_re10k_dataloader(cfg, step_tracker):

@@ -17,4 +17,4 @@ python finetune.py \
     +trainer.gradient_clip_val=1.0 \
     +trainer.gradient_clip_algorithm=norm \
     +trainer.devices=4 \
-    +trainer.strategy=ddp_find_unused_parameters_true
+    +trainer.strategy=ddp

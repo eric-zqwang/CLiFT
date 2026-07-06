@@ -50,7 +50,13 @@ class CLiFTnvs(LiFTnvs):
         return closest_token_ids, assignments
 
 
-    def get_kmeans_centroids_faiss(self, features, num_keep):
+    def get_kmeans_centroids_faiss(self, features, num_keep, gpu=False):
+        """Cluster tokens with FAISS K-means; return, per cluster, the index of
+        the token closest to its centroid (the anchor) plus per-token labels.
+
+        Evaluation always uses gpu=False (the paper numbers were produced with
+        CPU K-means); the offline annotation pass may enable it for speed.
+        """
         bs, N, D = features.shape
         assert bs == 1, "Only batch size 1 is supported."
         features = features[0]  # shape [N, D]
@@ -59,7 +65,7 @@ class CLiFTnvs(LiFTnvs):
         features_np = features.detach().cpu().contiguous().numpy().astype(np.float32)
 
         # FAISS kmeans setup
-        kmeans = faiss.Kmeans(d=D, k=num_keep, gpu=False)
+        kmeans = faiss.Kmeans(d=D, k=num_keep, gpu=gpu)
         kmeans.train(features_np)
 
         centroids = kmeans.centroids                       # [num_keep, D]
@@ -84,9 +90,11 @@ class CLiFTnvs(LiFTnvs):
         return closest_token_ids, assignments
 
 
-    def encode_and_kmeans(self, input_image, input_view_plucker_coords, token_ratio=0.2):
+    def encode_and_kmeans(self, input_image, input_view_plucker_coords, token_ratio=0.2, num_context_views=None):
         """
-        Inference time we assume use 2048 token to track performance
+        Inference time we assume use 2048 token to track performance.
+        num_context_views exists for interface uniformity with the DL3DV model
+        (RE10K batches have no padded views and pass None).
         """
         bs = input_image.shape[0]
 
@@ -127,9 +135,10 @@ class CLiFTnvs(LiFTnvs):
         return features, keep_indices, assignments, num_keep
     
 
-    def forward(self, features, anchor_idx, labels, num_tokens, target_view_plucker_coords):
-        # Squeeze features
-        squeezed_features = self.squeezer(features, anchor_idx, labels, num_tokens)
+    def forward(self, features, anchor_idx, labels, num_tokens, target_view_plucker_coords, num_context_views=None):
+        # Squeeze features. num_context_views is only used by DL3DV batches,
+        # where the condenser masks tokens of padded (non-existent) views.
+        squeezed_features = self.squeezer(features, anchor_idx, labels, num_tokens, num_context_views)
         
         # Get padding mask
         bs, seq_len, _ = squeezed_features.shape

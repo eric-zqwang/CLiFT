@@ -52,7 +52,7 @@ class LiFTnvsKmeans(LiFTnvs):
         features_np = features.detach().cpu().contiguous().numpy().astype(np.float32)
 
         # FAISS kmeans setup
-        kmeans = faiss.Kmeans(d=D, k=num_keep, gpu=True)
+        kmeans = faiss.Kmeans(d=D, k=num_keep, gpu=faiss.get_num_gpus() > 0)
         kmeans.train(features_np)
 
         centroids = kmeans.centroids                       # [num_keep, D]

@@ -10,11 +10,6 @@
 
 https://github.com/user-attachments/assets/fc3539df-28fc-4529-b6e6-9a231f2bd87f
 
-## Checklists
-- [x] Release the training and inference on RE10K
-- [ ] Add more detailed docs
-- [ ] Release the training and inference on DL3DV
-
 ## Table of Content
 - [Introduction](#introduction)
 - [Installation](#installation)
@@ -43,10 +38,12 @@ Please refer to the [installation guide](docs/installation.md) to set up the env
 
 ## Data preparation
 
-Please refer to the [data preparation guide](docs/data_preparation.md) to download and prepare for the RealEstate10K dataset.
+Please refer to the [data preparation guide](docs/data_preparation.md) to download and prepare the RealEstate10K and DL3DV datasets.
 
 
 ## Getting started
+
+Pretrained checkpoints for both datasets are available on [Hugging Face](https://huggingface.co/EricW123456/CLiFT).
 
 Please follow the [test guide](docs/test.md) for model inference, evaluation, and visualization.
 

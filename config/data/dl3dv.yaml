@@ -8,3 +8,6 @@ overfit: -1
 normalize_camera: true
 min_context_views: 4
 max_context_views: 6
+# Precomputed K-means assignments (see save_kmeans.py). Selects the
+# second-stage (condenser) training dataset when set.
+kmeans_dir: null

@@ -4,7 +4,9 @@ hydra-core
 imageio
 imageio-ffmpeg
 jaxtyping
-lightning
+# lightning >= 2.6 refuses to load our checkpoints under torch >= 2.6
+# (weights_only torch.load rejects the pickled omegaconf config).
+lightning==2.5.2
 lpips
 moviepy
 scikit-video
