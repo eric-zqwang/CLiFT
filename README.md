@@ -54,10 +54,10 @@ Please follow the [training guide](docs/training.md) for details about the train
 If you find CLiFT useful in your research or applications, please consider citing:
 
 ```
-@article{Wang2025CLiFT,
+@inproceedings{Wang2025CLiFT,
   author    = {Wang, Zhengqing and Wu, Yuefan and Chen, Jiacheng and Zhang, Fuyang and Furukawa, Yasutaka},
   title     = {CLiFT: Compressive Light-Field Tokens for Compute Efficient and Adaptive Neural Rendering},
-  journal   = {arXiv preprint arXiv:2507.08776},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
   year      = {2025},
 }
 ```
